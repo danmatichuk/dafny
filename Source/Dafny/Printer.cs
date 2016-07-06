@@ -269,7 +269,6 @@ namespace Microsoft.Dafny {
             wr.WriteLine("as {0}", Util.Comma(".", ((ModuleFacadeDecl)d).Path, id => id.val));
           } else if (d is ModuleExportDecl) {
             ModuleExportDecl e = (ModuleExportDecl)d;
-            if (e.IsDefault) wr.Write("default ");
             wr.Write("export {0}", e.Name);
             if (e.Extends.Count > 0) wr.Write(" extends {0}", Util.Comma(e.Extends, id => id));
             PrintModuleExportDecl(e, indent, fileBeingPrinted);
@@ -284,10 +283,31 @@ namespace Microsoft.Dafny {
     void PrintModuleExportDecl(ModuleExportDecl m, int indent, string fileBeingPrinted) {
       ModuleSignature sig = m.Signature;
       if (sig == null) {
-        wr.Write(" {");
         // has been resolved yet, just print the strings
-        wr.Write("{0}", Util.Comma(m.Exports, id => id.Name));
-        wr.Write("}");
+        string bodyKind = "";
+        string opaque = "opaque";
+        string reveal = "reveal";
+        string delimeter = " ";
+
+        foreach (ExportSignature id in m.Exports)
+        {          
+          delimeter = ",";
+
+          if (!id.IncludeBody && bodyKind != opaque)
+          {
+            bodyKind = opaque;
+            wr.Write(" " + bodyKind);
+            delimeter = " ";
+          }
+          else if (id.IncludeBody && bodyKind != reveal)
+          {
+            bodyKind = reveal;
+            wr.Write(" " + bodyKind);
+            delimeter = " ";
+          }
+          wr.Write(delimeter + "{0}", id.Name);
+        }
+        wr.WriteLine();
       } else {
         wr.WriteLine(" {");
         // print the decls and members in the module
